@@ -1,21 +1,8 @@
-/* This game is a classic text-based adventure set in a university environment.
-   The player starts outside the main entrance and can navigate through different rooms like a 
-   lecture theatre, campus pub, computing lab, and admin office using simple text commands (e.g., "go east", "go west").
-    The game provides descriptions of each location and lists possible exits.
-
-Key features include:
-Room navigation: Moving among interconnected rooms with named exits.
-Simple command parser: Recognizes a limited set of commands like "go", "help", and "quit".
-Player character: Tracks current location and handles moving between rooms.
-Text descriptions: Provides immersive text output describing the player's surroundings and available options.
-Help system: Lists valid commands to guide the player.
-Overall, it recreates the classic Zork interactive fiction experience with a university-themed setting, 
-emphasizing exploration and simple command-driven gameplay
-*/
-
 public class ZorkULGame {
     private final Parser parser;
     private Player player;
+    // New state flag for the coffee machine quest
+    private boolean isCoffeeMachineFixed = false; 
 
     public ZorkULGame() {
         createRooms();
@@ -23,37 +10,50 @@ public class ZorkULGame {
     }
 
     private void createRooms() {
-        Room dorm, corridor, lounge, library, vending;
+        Room dorm, corridor, lounge, library, maintenance;
 
-        // create rooms
+       
         dorm = new Room("in your dorm room. Your desk is covered in papers and a glowing laptop.");
         corridor = new Room("in the dormitory corridor. You can hear muffled video gamenoises from other rooms.");
-        lounge = new Room("in the study lounge. Its cold quiet and smells like coffee.");
+        // UPDATED LOUNGE DESCRIPTION and Exits
+        lounge = new Room("in the Study Lounge. A cold, uncomfortable room filled with uncomfortable chairs and stale air. There is a broken coffee machine on a counter.");
         library = new Room("in the campus library. Rows of books stretch out.");
-        vending = new Room("at the vending machines. You see snacks and drinks.");
+        // NEW ROOM: Maintenance, replaces the old vending room logic
+        maintenance = new Room("in a dusty Maintenance Closet. It smells faintly of bleach and mildew.");
+
 
         // add items to rooms
         ColdCoffee coffeeMug = new ColdCoffee("CoffeeMug", "A mug with stale coffee residue.");
-        ColdCoffee energyDrink = new ColdCoffee("EnergyDrink", "A sugary energy drink that might kill you, but you need it.");
         
+        // Using the concrete SimpleItem class. This now works because SimpleItem is defined
+        // within the ZorkULGame class structure and is accessible.
+        SimpleItem replacementFilter = new SimpleItem("Filter", "A brand new, clean coffee filter. Seems to be the right size for the machine.");
+        maintenance.addItem(replacementFilter); 
+        
+        // Items needed for the main quest
         dorm.addItem(new Laptop("Laptop", "Your trusty (and slightly battered) research machine."));
-
         dorm.addItem(coffeeMug);
-        vending.addItem(energyDrink);
         
         // initialise room exits
         dorm.setExit("east", corridor);
+        
         corridor.setExit("west", dorm);
-        corridor.setExit("south", vending);
-        corridor.setExit("north", lounge);
+        corridor.setExit("up", lounge); // Changed exit to Lounge
+        corridor.setExit("north", library);
 
-        lounge.setExit("south", corridor);
-        lounge.setExit("east", library);
-        library.setExit("west", lounge);
-        vending.setExit("north", corridor);
+        // Lounge Exits
+        lounge.setExit("down", corridor); 
+        lounge.setExit("south", maintenance); // The Maintenance Closet is off the lounge
+
+        // Library Exits
+        library.setExit("south", corridor);
+        
+        // Maintenance Exits
+        maintenance.setExit("north", lounge);
+
 
         // create the player character and start in dorm room
-        player = new Player("player", dorm); //changed to player class
+        player = new Player("player", dorm);
     }
 
     public void play() {
@@ -73,7 +73,7 @@ public class ZorkULGame {
         System.out.println("You must finish your 4000 word paper before 8:00 AM. Good luck.");
         System.out.println("Type 'help' if you need help.");
         System.out.println();
-        System.out.println(player.getCurrentRoom().getLongDescription());
+        System.out.println(player.getCurrentRoom().getLongDescription()); 
         System.out.println(String.format("Current Status: Sleep Level: %d | Word Count: %d/4000", player.getSleepLevel(), player.getWordCount()));
     }
 
@@ -88,12 +88,13 @@ public class ZorkULGame {
         switch (commandWord) {
             case "take" -> takeItem(command);
             case "drop" -> dropItem(command);
-            case "consume" ->  consumeItem(command);// New command logic
-            case "write" ->  writePaper();// New command logic
+            case "use" -> interactItem(command); 
+            case "write" -> writePaper(); 
             case "status" -> System.out.println(String.format("Status: Sleep Level: %d | Word Count: %d/4000", player.getSleepLevel(), player.getWordCount()));
             case "help" -> printHelp();
-            case "look" -> lookAround();
             case "go" -> goRoom(command);
+            case "look" -> lookAround(); 
+            case "repair" -> repairCoffeeMachine(); 
             case "quit" -> {
                 if (command.hasSecondWord()) {
                     System.out.println("Quit what?");
@@ -104,32 +105,57 @@ public class ZorkULGame {
             }
             default -> System.out.println("I don't know what you mean...");
         }
+        
+        // Win condition check
         if(player.getWordCount() >= 4000) {
             System.out.println("\n Hooray! You finished the paper! Now SUBMIT!");
-            // This is where the submission logic would be added
         }
         
         return false;
     }
-    private void lookAround() {
-        System.out.println(player.getCurrentRoom().getLongDescription());
-        player.showInventory();
-    }
-    
-    // NEW METHOD: Handles the WRITE command with logic checks
-    private void writePaper() {
-        // Check if the player has the required item (Laptop) in their inventory
-        if (player.getItem("Laptop") != null) {
-            player.write();
+
+    // NEW METHOD: Handles the Repair command
+    private void repairCoffeeMachine() {
+        // Use current room's description to check location
+        if (player.getCurrentRoom().getDescription().contains("Study Lounge")) { 
+            if (isCoffeeMachineFixed) {
+                System.out.println("The coffee machine is already fixed. You can 'use' it now!");
+            } else if (player.getItem("Filter") != null) {
+                // Fix the machine
+                isCoffeeMachineFixed = true;
+                player.removeItem(player.getItem("Filter"));
+                
+                // Change room description to reflect fix
+                Room lounge = player.getCurrentRoom();
+                Room newLounge = new Room(lounge.getDescription().replace("broken coffee machine", "fully operational coffee machine, brewing a fresh pot!"));
+                newLounge.setExit("down", lounge.getExit("down")); 
+                newLounge.setExit("south", lounge.getExit("south"));
+
+                player.setCurrentRoom(newLounge);
+                
+                System.out.println("You carefully insert the new filter and press the 'brew' button. Success! Fresh coffee is brewing.");
+                System.out.println("The Sleep Level penalty for writing will now be reduced!");
+            } else {
+                System.out.println("You can't fix the machine without a replacement filter. It looks like it needs a clean one.");
+            }
         } else {
-            System.out.println("You can't write without your Laptop!");
+            System.out.println("There's nothing here that needs repairing.");
         }
     }
 
-// --- New Command Handler: CONSUME ---
-    private void consumeItem(Command command) {
+
+    // NEW METHOD: Unified item interaction handler, replaces consumeItem
+    private void interactItem(Command command) {
         if (!command.hasSecondWord()) {
-            System.out.println("Consume what?");
+            // Check if player is in the lounge and wants to use the machine
+            if (player.getCurrentRoom().getDescription().contains("Study Lounge") && isCoffeeMachineFixed) {
+                // Assume 'use' without a second word means use the fixed coffee machine
+                player.setSleepLevel(player.getSleepLevel() + 50); // Big boost for fresh coffee
+                System.out.println("You grab a mug and pour yourself a cup of fresh, hot coffee. That hits the spot!");
+                System.out.println("Sleep Level increased by 50 to " + player.getSleepLevel() + ".");
+                return;
+            }
+            System.out.println("Use what? (e.g., use CoffeeMug)");
             return;
         }
 
@@ -138,19 +164,40 @@ public class ZorkULGame {
 
         if (item == null) {
             System.out.println("You don't have that item.");
-        } else if (item instanceof Consumable consumable) {
-            // Use the IConsumable interface method
+            return;
+        } 
+        
+        // 1. Check if Consumable (like coffee mug)
+        if (item instanceof Consumable consumable) {
             consumable.consume(player); 
-        } else {
-            System.out.println("You can't consume the " + itemName + ".");
+        } 
+        // 2. Otherwise, use the general Item interact method
+        else {
+            item.interact(player);
         }
     }
+
+
+    private void lookAround() {
+        System.out.println(player.getCurrentRoom().getLongDescription());
+        player.showInventory();
+    }
+    
+    private void writePaper() {
+        // Check if the player has the required item (Laptop) in their inventory
+        if (player.getItem("Laptop") != null) {
+            player.write();
+        } else {
+            System.out.println("You can't write without your Laptop! You should 'take Laptop' first.");
+        }
+    }
+
     private void printHelp() {
         System.out.println("You are lost. You are alone. You wander around the university.");
         System.out.print("Your command words are: ");
         parser.showCommands();
     }
-//left here
+
     private void goRoom(Command command) {
         if (!command.hasSecondWord()) {
             System.out.println("Go where?");
@@ -166,22 +213,23 @@ public class ZorkULGame {
             System.out.println(player.getCurrentRoom().getLongDescription());
         }
     }
+    
     private void takeItem(Command command) {
-    if (!command.hasSecondWord()) {
-        System.out.println("Take what?");
-        return;
-    }
+        if (!command.hasSecondWord()) {
+            System.out.println("Take what?");
+            return;
+        }
 
-    String itemName = command.getSecondWord();
-    Item item = player.getCurrentRoom().takeItem(itemName);
+        String itemName = command.getSecondWord();
+        Item item = player.getCurrentRoom().takeItem(itemName);
 
-    if (item == null) {
-        System.out.println("There is no such item here.");
-    } else {
-        player.addItem(item);
-        System.out.println("You picked up the " + itemName + ".");
+        if (item == null) {
+            System.out.println("There is no such item here.");
+        } else {
+            player.addItem(item);
+            System.out.println("You picked up the " + itemName + ".");
+        }
     }
-}
 
     private void dropItem(Command command) {
         if (!command.hasSecondWord()) {
@@ -205,20 +253,45 @@ public class ZorkULGame {
         ZorkULGame game = new ZorkULGame();
         game.play();
     }
-}
-class Laptop extends Item {
-
-    public Laptop(String name, String description) {
-        super(name, description);
+    
+    // --- Nested Item Class Definitions ---
+    
+    /**
+     * SimpleItem.java (Integrated Class Definition)
+     * A concrete class for simple, non-consumable items that just need to be picked up
+     * (like the Filter), and don't need a custom 'interact' behavior beyond the default 
+     * message inherited from Item.
+     */
+    static class SimpleItem extends Item {
+        public SimpleItem(String name, String description) {
+            super(name, description);
+        }
+        @Override
+        public void interact(Player player) {
+            System.out.println("You examine the " + getName() + ". It looks like a replacement part for a machine.");
+        }
     }
 
+
     /**
-     * Defines the interaction when the player uses or looks at the laptop.
+     * Laptop.java (Integrated Class Definition)
+     * The essential, non-consumable item required for the player to write the paper.
+     * It extends the abstract Item class.
      */
-    @Override
-    public void interact(Player player) {
-        System.out.println("The " + getName() + " is currently open to your half-finished paper.");
-        System.out.println("You should probably start writing...");
+    static class Laptop extends Item {
+
+        public Laptop(String name, String description) {
+            super(name, description);
+        }
+
+        /**
+         * Defines the interaction when the player uses or looks at the laptop.
+         */
+        @Override
+        public void interact(Player player) {
+            System.out.println("The " + getName() + " is currently open to your half-finished paper.");
+            System.out.println("It seems to be working, but you should probably use the 'write' command.");
+        }
     }
 }
 
