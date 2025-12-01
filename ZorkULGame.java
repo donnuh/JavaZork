@@ -1,7 +1,6 @@
 public class ZorkULGame {
     private final Parser parser;
     private Player player;
-    // New state flag for the coffee machine quest
     private boolean isCoffeeMachineFixed = false; 
 
     public ZorkULGame() {
@@ -11,48 +10,37 @@ public class ZorkULGame {
 
     private void createRooms() {
         Room dorm, corridor, lounge, library, maintenance;
-
        
         dorm = new Room("in your dorm room. Your desk is covered in papers and a glowing laptop.");
         corridor = new Room("in the dormitory corridor. You can hear muffled video gamenoises from other rooms.");
-        // UPDATED LOUNGE DESCRIPTION and Exits
         lounge = new Room("in the Study Lounge. A cold, uncomfortable room filled with uncomfortable chairs and stale air. There is a broken coffee machine on a counter.");
         library = new Room("in the campus library. Rows of books stretch out.");
-        // NEW ROOM: Maintenance, replaces the old vending room logic
         maintenance = new Room("in a dusty Maintenance Closet. It smells faintly of bleach and mildew.");
 
-
-        // add items to rooms
         ColdCoffee coffeeMug = new ColdCoffee("CoffeeMug", "A mug with stale coffee residue.");
         
-        // Using the concrete SimpleItem class. This now works because SimpleItem is defined
-        // within the ZorkULGame class structure and is accessible.
+        
         SimpleItem replacementFilter = new SimpleItem("Filter", "A brand new, clean coffee filter. Seems to be the right size for the machine.");
         maintenance.addItem(replacementFilter); 
         
-        // Items needed for the main quest
         dorm.addItem(new Laptop("Laptop", "Your trusty (and slightly battered) research machine."));
         dorm.addItem(coffeeMug);
         
-        // initialise room exits
+   
         dorm.setExit("east", corridor);
         
         corridor.setExit("west", dorm);
-        corridor.setExit("up", lounge); // Changed exit to Lounge
+        corridor.setExit("up", lounge); 
         corridor.setExit("north", library);
 
-        // Lounge Exits
         lounge.setExit("down", corridor); 
-        lounge.setExit("south", maintenance); // The Maintenance Closet is off the lounge
+        lounge.setExit("south", maintenance); 
 
-        // Library Exits
         library.setExit("south", corridor);
         
-        // Maintenance Exits
         maintenance.setExit("north", lounge);
 
 
-        // create the player character and start in dorm room
         player = new Player("player", dorm);
     }
 
@@ -114,18 +102,18 @@ public class ZorkULGame {
         return false;
     }
 
-    // NEW METHOD: Handles the Repair command
+    //Handles the Repair command
     private void repairCoffeeMachine() {
-        // Use current room's description to check location
+        //Use current room's description to check location
         if (player.getCurrentRoom().getDescription().contains("Study Lounge")) { 
             if (isCoffeeMachineFixed) {
                 System.out.println("The coffee machine is already fixed. You can 'use' it now!");
             } else if (player.getItem("Filter") != null) {
-                // Fix the machine
+                //Fix the machine
                 isCoffeeMachineFixed = true;
                 player.removeItem(player.getItem("Filter"));
                 
-                // Change room description to reflect fix
+                //Change room description to reflect fix
                 Room lounge = player.getCurrentRoom();
                 Room newLounge = new Room(lounge.getDescription().replace("broken coffee machine", "fully operational coffee machine, brewing a fresh pot!"));
                 newLounge.setExit("down", lounge.getExit("down")); 
@@ -144,12 +132,12 @@ public class ZorkULGame {
     }
 
 
-    // NEW METHOD: Unified item interaction handler, replaces consumeItem
+    //Unified item interaction handler, replaces consumeItem
     private void interactItem(Command command) {
         if (!command.hasSecondWord()) {
-            // Check if player is in the lounge and wants to use the machine
+            //Check if player is in the lounge and wants to use the machine
             if (player.getCurrentRoom().getDescription().contains("Study Lounge") && isCoffeeMachineFixed) {
-                // Assume 'use' without a second word means use the fixed coffee machine
+                //Assume 'use' without a second word means use the fixed coffee machine
                 player.setSleepLevel(player.getSleepLevel() + 50); // Big boost for fresh coffee
                 System.out.println("You grab a mug and pour yourself a cup of fresh, hot coffee. That hits the spot!");
                 System.out.println("Sleep Level increased by 50 to " + player.getSleepLevel() + ".");
@@ -167,11 +155,11 @@ public class ZorkULGame {
             return;
         } 
         
-        // 1. Check if Consumable (like coffee mug)
+        //1. Check if Consumable (like coffee mug)
         if (item instanceof Consumable consumable) {
             consumable.consume(player); 
         } 
-        // 2. Otherwise, use the general Item interact method
+        //2. Otherwise, use the general Item interact method
         else {
             item.interact(player);
         }
@@ -184,7 +172,7 @@ public class ZorkULGame {
     }
     
     private void writePaper() {
-        // Check if the player has the required item (Laptop) in their inventory
+        //Check if the player has the required item (Laptop) in their inventory
         if (player.getItem("Laptop") != null) {
             player.write();
         } else {
@@ -252,10 +240,7 @@ public class ZorkULGame {
     public static void main(String[] args) {
         ZorkULGame game = new ZorkULGame();
         game.play();
-    }
-    
-    // --- Nested Item Class Definitions ---
-    
+    }  
     /**
      * SimpleItem.java (Integrated Class Definition)
      * A concrete class for simple, non-consumable items that just need to be picked up
