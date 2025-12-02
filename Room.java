@@ -30,7 +30,7 @@ public class Room {
     }
 
     public String getExitString() {
-        StringBuilder returnString = new StringBuilder("Exits:");
+        StringBuilder returnString = new StringBuilder();
         Set<String> keys = exits.keySet();
         for (String exit : keys) {
             returnString.append(" ").append(exit);
@@ -55,7 +55,7 @@ public class Room {
 
 
     public String getLongDescription() {
-        return "You are " + description + ".\nExits: " + getExitString() + "\n" + getItemString();
+        return "You are " + description + ".\nExits:" + getExitString() + "\n" + getItemString();
     }
    public Item takeItem(String itemName) {
         return items.remove(itemName.toLowerCase());

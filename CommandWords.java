@@ -20,6 +20,9 @@ public class CommandWords {
         validCommands.put("repair", "Attempt to repair the coffee machine");
         validCommands.put("swipe", "Swipe your ID card");
         validCommands.put("talk", "Talk to someone");
+        validCommands.put("close", "Close a distraction");
+        validCommands.put("mute", "Mute a distraction");
+        
     }
 
     public boolean isCommand(String commandWord) {

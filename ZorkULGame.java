@@ -11,6 +11,12 @@ public class ZorkULGame {
     private boolean isMaxPlacated = false;
     private boolean isLibrarianGone = false; 
 
+    //socmed distraction states
+    private boolean isDistracted = false; 
+    private boolean isHyperfocused = false;
+    private int hyperfocusRemainingTurns = 0; //duration of boost 
+    private String requiredCommand = null;
+
     public ZorkULGame() {
         createRooms();
         parser = new Parser();
@@ -38,6 +44,25 @@ public class ZorkULGame {
             isLibrarianGone = true;
             System.out.println("\n*** The clock strikes 1:00 AM. The Librarian silently packs up and leaves! ***");
             System.out.println("*** The Research Stacks are now open. ***");
+        }
+        //random socmed distraction make it 15% chance per action 
+        boolean isAllNighterActive = (gameTimeHours >= 22 || gameTimeHours <= 7);
+        if (!isDistracted && !isHyperfocused && isAllNighterActive) {
+            if (Math.random() < 0.15) { //15% chance
+                isDistracted = true;
+                
+                // Randomly choose the required command
+                if (Math.random() < 0.5) {
+                     requiredCommand = "CLOSE";
+                     System.out.println("\n*** SOCIAL MEDIA DISTRACTION ALERT! ***");
+                     System.out.println("Your laptop tab popped up. You need to quickly type 'CLOSE'!");
+                } else {
+                     requiredCommand = "MUTE";
+                     System.out.println("\n*** SOCIAL MEDIA DISTRACTION ALERT! ***");
+                     System.out.println("Your phone is buzzing. You need to quickly type 'MUTE'!");
+                }
+                System.out.println("Failure to act or using the wrong command will result in a time penalty!");
+            }
         }
         //check for deadline (8:00 AM or 08:00)
         if (gameTimeHours >= 8 && gameTimeHours < 22 && player.getWordCount() < 4000) {
@@ -122,8 +147,16 @@ public class ZorkULGame {
         }
 
         //advance time before command execution cs most actions take time
-        if (!commandWord.equals("status") && !commandWord.equals("help")) {
-            advanceTime(10); //10 mins per action
+        if (!commandWord.equals("status") && !commandWord.equals("help") && !commandWord.equals("look")) {
+            advanceTime(10); // 10 minutes per action
+            
+            //handle socmed distraction check
+            if (isDistracted && !commandWord.equalsIgnoreCase("close") && !commandWord.equalsIgnoreCase("mute")) {
+                 System.out.println("\n[DISTRACTION FAILURE] You ignored the alert and wasted 15 minutes!");
+                 advanceTime(15); 
+                 isDistracted = false;
+                 requiredCommand = null;
+            }
         }
 
         switch (commandWord) {
@@ -138,6 +171,8 @@ public class ZorkULGame {
             case "repair" -> repairCoffeeMachine(); 
             case "talk" -> talkMax(command);
             case "swipe" -> swipeCard();
+            case "close" -> resolveDistraction("CLOSE");
+            case "mute" -> resolveDistraction("MUTE");
             case "quit" -> {
                 if (command.hasSecondWord()) {
                     System.out.println("Quit what?");
@@ -163,6 +198,29 @@ public class ZorkULGame {
         return false; 
     }
 
+    private void resolveDistraction(String inputCommand) {
+        if (!isDistracted) {
+            System.out.println("You are not currently distracted.");
+            return;
+        }
+        
+        if (requiredCommand != null && inputCommand.equalsIgnoreCase(requiredCommand)) {
+            //if success
+            System.out.println("\n[DISTRACTION RESOLVED] That was fast! You successfully silenced the noise.");
+            System.out.println("You enter a state of **Hyperfocus**! Your writing speed is temporarily boosted.");
+            
+            isDistracted = false;
+            isHyperfocused = true;
+            hyperfocusRemainingTurns = 5; 
+            requiredCommand = null;
+            
+        } else {
+            System.out.println("\n[DISTRACTION FAILURE] Wrong command! You wasted 15 minutes scrolling through memes.");
+            advanceTime(15); 
+            isDistracted = false;
+            requiredCommand = null;
+        }
+    }
     private void talkMax(Command command) {
         if (player.getCurrentRoom().getDescription().contains("dormitory corridor") && command.getSecondWord() != null && command.getSecondWord().equalsIgnoreCase("max")) {
             if (isMaxPlacated) {
@@ -269,6 +327,21 @@ public class ZorkULGame {
     private void writePaper() {
         //Check if the player has the required item (Laptop) in their inventory
         if (player.getItem("Laptop") != null) {
+            if (isHyperfocused) {
+                int newWords = player.getWordCount() + 200; // +200 words bonus!
+                player.setWordCount(newWords);
+                
+                System.out.println("\n*** HYPERFOCUS BONUS! +200 words added! ***");
+                
+                // Decrement hyperfocus turns
+                hyperfocusRemainingTurns--;
+                if (hyperfocusRemainingTurns <= 0) {
+                    isHyperfocused = false;
+                    System.out.println("Hyperfocus faded. Back to normal efficiency.");
+                } else {
+                    System.out.println("Hyperfocus remaining: " + hyperfocusRemainingTurns + " turns.");
+                }
+            }
             player.write();
         } else {
             System.out.println("You can't write without your Laptop! You should 'take Laptop' first.");
