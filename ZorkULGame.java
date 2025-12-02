@@ -9,6 +9,7 @@ public class ZorkULGame {
 
     private boolean isLibraryUnlocked = false;
     private boolean isMaxPlacated = false;
+    private boolean isLibrarianGone = false; 
 
     public ZorkULGame() {
         createRooms();
@@ -22,6 +23,8 @@ public class ZorkULGame {
     }
     
     private void advanceTime(int minutes) {
+        int oldHour = gameTimeHours;
+        
         int newTotalMinutes = gameTimeMinutes + minutes;
         gameTimeMinutes = newTotalMinutes % 60;
         
@@ -29,7 +32,13 @@ public class ZorkULGame {
         gameTimeHours = (gameTimeHours + hoursToAdd) % 24;
         
         System.out.println("\n[It is now " + formatTime() + "]");
-        
+
+        //check if the time crossed 1:00 AM (hour 1)
+        if (gameTimeHours == 1 && oldHour != 1 && !isLibrarianGone) {
+            isLibrarianGone = true;
+            System.out.println("\n*** The clock strikes 1:00 AM. The Librarian silently packs up and leaves! ***");
+            System.out.println("*** The Research Stacks are now open. ***");
+        }
         //check for deadline (8:00 AM or 08:00)
         if (gameTimeHours >= 8 && gameTimeHours < 22 && player.getWordCount() < 4000) {
             System.out.println("\n*** 8:00 AM has arrived! Your paper is not finished. You failed! ***");
@@ -300,7 +309,7 @@ public class ZorkULGame {
             return;
         }
         //lock 3: librarian time barrier
-        if (nextRoomName.contains("Research Stacks") && gameTimeHours < 1) { //1:00 AM = hour 1
+        if (nextRoomName.contains("Research Stacks") && !isLibrarianGone) { 
              System.out.println("The Librarian glares at you from their desk, guarding the research stacks.");
              System.out.println("Librarian: 'No one is allowed in the stacks until I leave at 1:00 AM. Shoo!'");
              System.out.println("(Current time: " + formatTime() + ")");
