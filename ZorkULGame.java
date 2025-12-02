@@ -1,30 +1,64 @@
 public class ZorkULGame {
     private final Parser parser;
     private Player player;
+
     private boolean isCoffeeMachineFixed = false; 
+    private boolean isSnackTaken = false;
+    private int gameTimeHours = 22;
+    private int gameTimeMinutes = 0;
+
+    private boolean isLibraryUnlocked = false;
+    private boolean isMaxPlacated = false;
 
     public ZorkULGame() {
         createRooms();
         parser = new Parser();
     }
+    private String formatTime() {
+        int displayHour = gameTimeHours % 12;
+        if (displayHour == 0) displayHour = 12;
+        String amPm = (gameTimeHours >= 12 && gameTimeHours < 24) ? "PM" : "AM";
+        return String.format("%d:%02d %s", displayHour, gameTimeMinutes, amPm);
+    }
+    
+    private void advanceTime(int minutes) {
+        int newTotalMinutes = gameTimeMinutes + minutes;
+        gameTimeMinutes = newTotalMinutes % 60;
+        
+        int hoursToAdd = newTotalMinutes / 60;
+        gameTimeHours = (gameTimeHours + hoursToAdd) % 24;
+        
+        System.out.println("\n[It is now " + formatTime() + "]");
+        
+        //check for deadline (8:00 AM or 08:00)
+        if (gameTimeHours >= 8 && gameTimeHours < 22 && player.getWordCount() < 4000) {
+            System.out.println("\n*** 8:00 AM has arrived! Your paper is not finished. You failed! ***");
+            System.exit(0);
+        }
+    }
 
     private void createRooms() {
-        Room dorm, corridor, lounge, library, maintenance;
+        Room dorm, corridor, lounge, library, maintenance, gamerRoom, researchStacks;
        
         dorm = new Room("in your dorm room. Your desk is covered in papers and a glowing laptop.");
         corridor = new Room("in the dormitory corridor. You can hear muffled video gamenoises from other rooms.");
         lounge = new Room("in the Study Lounge. A cold, uncomfortable room filled with uncomfortable chairs and stale air. There is a broken coffee machine on a counter.");
         library = new Room("in the campus library. Rows of books stretch out.");
         maintenance = new Room("in a dusty Maintenance Closet. It smells faintly of bleach and mildew.");
+        gamerRoom = new Room("in Max's Gamer Room. The walls glow with RGB light and the sound of mechanical keyboards fills the air.");
+        researchStacks = new Room("in the deep, dusty Research Stacks of the library. It is quiet here, perfect for focus.");
+
 
         ColdCoffee coffeeMug = new ColdCoffee("CoffeeMug", "A mug with stale coffee residue.");
-        
-        
         SimpleItem replacementFilter = new SimpleItem("Filter", "A brand new, clean coffee filter. Seems to be the right size for the machine.");
+        SimpleItem studentID = new SimpleItem("StudentID", "Your university ID card. You need this to get into locked campus buildings.");
+        //Snack snack = new Snack("Snack", "A sugary energy bar. Max might like this.", 10); //sleep boost of 10
+
         maintenance.addItem(replacementFilter); 
-        
         dorm.addItem(new Laptop("Laptop", "Your trusty (and slightly battered) research machine."));
         dorm.addItem(coffeeMug);
+        dorm.addItem(studentID); 
+        //library.addItem(snack); 
         
    
         dorm.setExit("east", corridor);
@@ -32,13 +66,18 @@ public class ZorkULGame {
         corridor.setExit("west", dorm);
         corridor.setExit("up", lounge); 
         corridor.setExit("north", library);
+        corridor.setExit("south", gamerRoom);
 
         lounge.setExit("down", corridor); 
         lounge.setExit("south", maintenance); 
 
         library.setExit("south", corridor);
+        library.setExit("east", researchStacks);
         
         maintenance.setExit("north", lounge);
+
+        gamerRoom.setExit("north", corridor);
+        researchStacks.setExit("west", library);
 
 
         player = new Player("player", dorm);
@@ -73,6 +112,11 @@ public class ZorkULGame {
             return false;
         }
 
+        //advance time before command execution cs most actions take time
+        if (!commandWord.equals("status") && !commandWord.equals("help")) {
+            advanceTime(10); //10 mins per action
+        }
+
         switch (commandWord) {
             case "take" -> takeItem(command);
             case "drop" -> dropItem(command);
@@ -83,6 +127,8 @@ public class ZorkULGame {
             case "go" -> goRoom(command);
             case "look" -> lookAround(); 
             case "repair" -> repairCoffeeMachine(); 
+            case "talk" -> talkMax(command);
+            case "swipe" -> swipeCard();
             case "quit" -> {
                 if (command.hasSecondWord()) {
                     System.out.println("Quit what?");
@@ -94,35 +140,78 @@ public class ZorkULGame {
             default -> System.out.println("I don't know what you mean...");
         }
         
-        // Win condition check
+        //win condition check
         if(player.getWordCount() >= 4000) {
             System.out.println("\n Hooray! You finished the paper! Now SUBMIT!");
+            return true;
+        }
+        //death condition check
+        if (player.getSleepLevel() <= 0) {
+            System.out.println("\n*** You fell asleep at your keyboard from exhaustion! Game Over. ***");
+            return true;
         }
         
-        return false;
+        return false; 
     }
 
-    //Handles the Repair command
-    private void repairCoffeeMachine() {
-        //Use current room's description to check location
+    private void talkMax(Command command) {
+        if (player.getCurrentRoom().getDescription().contains("dormitory corridor") && command.getSecondWord() != null && command.getSecondWord().equalsIgnoreCase("max")) {
+            if (isMaxPlacated) {
+                System.out.println("Max grunts from his room. He's still busy, but he won't block your way.");
+                return;
+            }
+            
+            //check for Snack item
+            Item snack = player.getItem("Snack");
+            if (snack instanceof Snack) {
+                System.out.println("You offer the " + snack.getName() + " to Max who is blocking the way");
+                System.out.println("Max happily takes the snack and steps aside, allowing you to pass.");
+                player.removeItem(snack);
+                isMaxPlacated = true;
+                System.out.println("Max shoves the snack in his face and slumps back into his chair, clearing the path to the Gamer Room.");
+            } else {
+                System.out.println("Max is blocking your way. He looks hungry. Maybe if you had something to offer him...");
+            }
+        } else {
+            System.out.println("You talk to yourself awkwardly.");
+        }
+    }
+
+    private void swipeCard() {
+        if (player.getCurrentRoom().getDescription().contains("dormitory corridor") || player.getCurrentRoom().getDescription().contains("campus library")) {
+            if (isLibraryUnlocked) {
+                System.out.println("The lock is already green. You don't need to swipe again.");
+                return;
+            }
+            
+            //check for Student ID item
+            Item studentID = player.getItem("StudentID");
+            if (studentID != null) {
+                isLibraryUnlocked = true;
+                System.out.println("You swipe your StudentID card. The lock flashes green and emits a satisfying *BEEP*. The library door is now unlocked!");
+            } else {
+                System.out.println("You try swiping your hand, but that doesn't work. You need an access card.");
+            }
+        } else {
+            System.out.println("There is nothing here to swipe.");
+        }
+    }
+
+    //handles repair command
+     private void repairCoffeeMachine() {
         if (player.getCurrentRoom().getDescription().contains("Study Lounge")) { 
             if (isCoffeeMachineFixed) {
-                System.out.println("The coffee machine is already fixed. You can 'use' it now!");
+                System.out.println("The coffee machine is already fixed. You can 'use' it now to get fresh coffee!");
             } else if (player.getItem("Filter") != null) {
-                //Fix the machine
+                // fix the machine
                 isCoffeeMachineFixed = true;
                 player.removeItem(player.getItem("Filter"));
                 
-                //Change room description to reflect fix
-                Room lounge = player.getCurrentRoom();
-                Room newLounge = new Room(lounge.getDescription().replace("broken coffee machine", "fully operational coffee machine, brewing a fresh pot!"));
-                newLounge.setExit("down", lounge.getExit("down")); 
-                newLounge.setExit("south", lounge.getExit("south"));
-
-                player.setCurrentRoom(newLounge);
+                // Add the snack to the room's visible items list temporarily for the 'take' command
+                player.getCurrentRoom().addItem(new Snack("Snack", "A sugary energy bar, slightly crushed. It was hidden behind the filter compartment.", 10));
                 
-                System.out.println("You carefully insert the new filter and press the 'brew' button. Success! Fresh coffee is brewing.");
-                System.out.println("The Sleep Level penalty for writing will now be reduced!");
+                System.out.println("Success! The coffee machine is operational. You notice a small, crushed box hidden in the filter compartment. A *Snack* has appeared!");
+                System.out.println("You can now 'use' the machine for coffee, and perhaps 'take Snack'.");
             } else {
                 System.out.println("You can't fix the machine without a replacement filter. It looks like it needs a clean one.");
             }
@@ -131,14 +220,12 @@ public class ZorkULGame {
         }
     }
 
-
-    //Unified item interaction handler, replaces consumeItem
     private void interactItem(Command command) {
         if (!command.hasSecondWord()) {
-            //Check if player is in the lounge and wants to use the machine
+            //check if player is in the lounge and wants to use the machine
             if (player.getCurrentRoom().getDescription().contains("Study Lounge") && isCoffeeMachineFixed) {
-                //Assume 'use' without a second word means use the fixed coffee machine
-                player.setSleepLevel(player.getSleepLevel() + 50); // Big boost for fresh coffee
+                //assume 'use' without a second word means use the fixed coffee machine
+                player.setSleepLevel(player.getSleepLevel() + 50); 
                 System.out.println("You grab a mug and pour yourself a cup of fresh, hot coffee. That hits the spot!");
                 System.out.println("Sleep Level increased by 50 to " + player.getSleepLevel() + ".");
                 return;
@@ -155,16 +242,15 @@ public class ZorkULGame {
             return;
         } 
         
-        //1. Check if Consumable (like coffee mug)
+        //1. check if Consumable (like coffee mug)
         if (item instanceof Consumable consumable) {
             consumable.consume(player); 
         } 
-        //2. Otherwise, use the general Item interact method
+        //2. otherwise, use the general Item interact method
         else {
             item.interact(player);
         }
     }
-
 
     private void lookAround() {
         System.out.println(player.getCurrentRoom().getLongDescription());
@@ -192,61 +278,88 @@ public class ZorkULGame {
             return;
         }
         String direction = command.getSecondWord();
-        Room nextRoom = player.getCurrentRoom().getExit(direction);
+        Room currentRoom = player.getCurrentRoom();
+        Room nextRoom = currentRoom.getExit(direction);
+        
 
         if (nextRoom == null) {
             System.out.println("There is no door!");
-        } else {
-            player.setCurrentRoom(nextRoom);
-            System.out.println(player.getCurrentRoom().getLongDescription());
-        }
-    }
-    
-    private void takeItem(Command command) {
-        if (!command.hasSecondWord()) {
-            System.out.println("Take what?");
             return;
         }
 
-        String itemName = command.getSecondWord();
-        Item item = player.getCurrentRoom().takeItem(itemName);
+        String nextRoomName = nextRoom.getDescription(); //used for checking locks
 
-        if (item == null) {
+        //lock 1: library access
+        if (nextRoomName.contains("campus library") && !isLibraryUnlocked) {
+            System.out.println("The library door is locked. You need to swipe your StudentID to enter.");
+            return;
+        }
+        //lock 2: Max's Gamer Room
+        if (nextRoomName.contains("Max's Gamer Room") && !isMaxPlacated) {
+            System.out.println("Max is blocking the entrance to his room. Maybe you can 'talk max'?");
+            return;
+        }
+        //lock 3: librarian time barrier
+        if (nextRoomName.contains("Research Stacks") && gameTimeHours < 1) { //1:00 AM = hour 1
+             System.out.println("The Librarian glares at you from their desk, guarding the research stacks.");
+             System.out.println("Librarian: 'No one is allowed in the stacks until I leave at 1:00 AM. Shoo!'");
+             System.out.println("(Current time: " + formatTime() + ")");
+             return;
+        }
+
+        player.setCurrentRoom(nextRoom);
+        System.out.println(player.getCurrentRoom().getLongDescription());
+    }
+
+    private void takeItem(Command command) {
+        if (!command.hasSecondWord()) { System.out.println("Take what?"); return; }
+        String itemName = command.getSecondWord();
+
+       //taking the snack in lounge
+        if (itemName.equalsIgnoreCase("Snack") && player.getCurrentRoom().getDescription().contains("Study Lounge")) {
+            if (!isCoffeeMachineFixed) {
+                System.out.println("You look around, but all you see is a broken coffee machine. Nothing to take here.");
+                return;
+            }
+            if (isSnackTaken) {
+                System.out.println("You already took the snack from behind the filter compartment.");
+                return;
+            }
+            // If fixed and not taken, proceed to take it normally, then set the flag.
+            Item item = player.getCurrentRoom().takeItem(itemName);
+            if (item != null) {
+                player.addItem(item); 
+                isSnackTaken = true;
+                System.out.println("You grabbed the " + itemName + " from the hidden compartment!");
+                return;
+            }
+        }
+        
+        //normal item taking logic
+        Item item = player.getCurrentRoom().takeItem(itemName);
+        if (item == null) { System.out.println("There is no such item here."); } 
+        else { player.addItem(item); System.out.println("You picked up the " + itemName + "."); }
+    }
+
+    private void dropItem(Command command) {
+        if (!command.hasSecondWord()) { System.out.println("Drop what?"); return; }
+        String itemName = command.getSecondWord();
+        Item item = player.getItem(itemName);
+        if (item == null) { System.out.println("You don't have that item."); } 
+        else { player.removeItem(item); player.getCurrentRoom().addItem(item); System.out.println("You dropped the " + itemName + "."); }
+    }
+        /**if (item == null) {
             System.out.println("There is no such item here.");
         } else {
             player.addItem(item);
             System.out.println("You picked up the " + itemName + ".");
-        }
-    }
-
-    private void dropItem(Command command) {
-        if (!command.hasSecondWord()) {
-            System.out.println("Drop what?");
-            return;
-        }
-
-        String itemName = command.getSecondWord();
-        Item item = player.getItem(itemName);
-
-        if (item == null) {
-            System.out.println("You don't have that item.");
-        } else {
-            player.removeItem(item);
-            player.getCurrentRoom().addItem(item);
-            System.out.println("You dropped the " + itemName + ".");
-        }
-    }
+        } **/   
 
     public static void main(String[] args) {
         ZorkULGame game = new ZorkULGame();
         game.play();
     }  
-    /**
-     * SimpleItem.java (Integrated Class Definition)
-     * A concrete class for simple, non-consumable items that just need to be picked up
-     * (like the Filter), and don't need a custom 'interact' behavior beyond the default 
-     * message inherited from Item.
-     */
+    
     static class SimpleItem extends Item {
         public SimpleItem(String name, String description) {
             super(name, description);
@@ -256,26 +369,46 @@ public class ZorkULGame {
             System.out.println("You examine the " + getName() + ". It looks like a replacement part for a machine.");
         }
     }
-
-
-    /**
-     * Laptop.java (Integrated Class Definition)
-     * The essential, non-consumable item required for the player to write the paper.
-     * It extends the abstract Item class.
-     */
     static class Laptop extends Item {
 
         public Laptop(String name, String description) {
             super(name, description);
         }
 
-        /**
-         * Defines the interaction when the player uses or looks at the laptop.
-         */
         @Override
         public void interact(Player player) {
-            System.out.println("The " + getName() + " is currently open to your half-finished paper.");
+            System.out.println("The " + getName() + " is currently open to your unfinished paper.");
             System.out.println("It seems to be working, but you should probably use the 'write' command.");
+        }
+    }
+    static class Snack extends Item implements Consumable {
+        private final int sleepEffect;
+        
+        //constructor matches Item n stores the sleep effect
+        public Snack(String name, String description, int sleepEffect) {
+            super(name, description);
+            this.sleepEffect = sleepEffect;
+        }
+        
+        //implement method from Consumable interface
+        @Override
+        public int getSleepBoostAmount() {
+            return sleepEffect;
+        }
+        
+        //implement method from Consumable interface
+        @Override
+        public void consume(Player player) {
+             player.setSleepLevel(player.getSleepLevel() + getSleepBoostAmount());
+             System.out.println("You quickly devour the " + getName() + ". It gives you a small sugar rush.");
+             System.out.println("Sleep Level increased by " + getSleepBoostAmount() + " to " + player.getSleepLevel() + ".");
+             player.removeItem(this); // Now works because Snack is an Item
+        }
+        
+        //implement abstract method from Item class
+        @Override
+        public void interact(Player player) {
+            System.out.println("This " + getName() + " is a sugary treat. You should 'use Snack' to eat it.");
         }
     }
 }

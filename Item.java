@@ -1,10 +1,11 @@
 //edited to become the abstract base class that defines all objects in the world
 
-public abstract class Item { // Now abstract
-    protected String name; // Changed to protected
-    protected String description; // Changed to protected
-    // Removed location, id, isVisible as these are handled by Room/Inventory lists
+import java.util.Objects;
 
+public abstract class Item { 
+    protected String name; 
+    protected String description; 
+    
     public Item(String name, String description) {
         this.name = name;
         this.description = description;
@@ -18,6 +19,18 @@ public abstract class Item { // Now abstract
         return description;
     }
 
-    // New: Abstract method for general interaction (like examine or use)
-    public abstract void interact(Player player); // Required by Item.java
+    public abstract void interact(Player player); 
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Item item = (Item) o;
+        return Objects.equals(name, item.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
+    }
 }
