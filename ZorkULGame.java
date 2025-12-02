@@ -224,11 +224,11 @@ public class ZorkULGame {
         System.out.println("\n========================================================");
         System.out.println("||        SYSTEM OVERRIDE: PAPER SUBMITTED!           ||");
         System.out.println("========================================================");
-        System.out.println("You've successfully HACKED THE SYSTEM!");
+        System.out.println("\nYou've successfully HACKED THE SYSTEM!");
         System.out.println("Word Count Set to 4000/4000.");
         System.out.println("Grade: 100% (MAXIMUM OVERDRIVE)");
         System.out.println("The professor won't know what hit them. VICTORY!");
-        System.out.println("========================================================");
+        System.out.println("\n========================================================");
 
         return true; // Game ends
     }
