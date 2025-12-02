@@ -22,7 +22,10 @@ public class CommandWords {
         validCommands.put("talk", "Talk to someone");
         validCommands.put("close", "Close a distraction");
         validCommands.put("mute", "Mute a distraction");
+        validCommands.put("submit", "Submit your paper");
+        validCommands.put("cheat", "Cheat on your paper"); 
         
+
     }
 
     public boolean isCommand(String commandWord) {
@@ -30,10 +33,11 @@ public class CommandWords {
     }
 
     public void showAll() {
-        System.out.print("Valid commands are: ");
         for (String command : validCommands.keySet()) {
-            System.out.print(command + " ");
+            if (!command.equals("cheat")) {
+                System.out.print(command + " ");
+            }
         }
-        System.out.println();
+        System.out.print(""); 
     }
 }

@@ -86,7 +86,7 @@ public class ZorkULGame {
         ColdCoffee coffeeMug = new ColdCoffee("CoffeeMug", "A mug with stale coffee residue.");
         SimpleItem replacementFilter = new SimpleItem("Filter", "A brand new, clean coffee filter. Seems to be the right size for the machine.");
         SimpleItem studentID = new SimpleItem("StudentID", "Your university ID card. You need this to get into locked campus buildings.");
-        //Snack snack = new Snack("Snack", "A sugary energy bar. Max might like this.", 10); //sleep boost of 10
+        //Snack snack = new Snack("Snack", "A sugary energy bar. Max might like this.", 10); 
 
         maintenance.addItem(replacementFilter); 
         dorm.addItem(new Laptop("Laptop", "Your trusty (and slightly battered) research machine."));
@@ -173,6 +173,9 @@ public class ZorkULGame {
             case "swipe" -> swipeCard();
             case "close" -> resolveDistraction("CLOSE");
             case "mute" -> resolveDistraction("MUTE");
+            case "submit" -> { return submitPaper(); } 
+            case "cheat" -> { return cheat(); } 
+            
             case "quit" -> {
                 if (command.hasSecondWord()) {
                     System.out.println("Quit what?");
@@ -191,11 +194,43 @@ public class ZorkULGame {
         }
         //death condition check
         if (player.getSleepLevel() <= 0) {
-            System.out.println("\n*** You fell asleep at your keyboard from exhaustion! Game Over. ***");
+            System.out.println("\n*** You fell asleep on your keyboard from exhaustion! Game Over. ***");
             return true;
         }
         
         return false; 
+    }
+    //make final submision logic, make check word count and end game
+    private boolean submitPaper() {
+        if (player.getWordCount() < 4000) {
+            System.out.println("\n[SUBMISSION FAILED] You are not finished! Word Count is only " + player.getWordCount() + "/4000.");
+            return false;
+        }
+
+        //victory
+        System.out.println("\n||              SUBMITTED PAPER! VICTORY!             ||");
+        System.out.println("\nWord Count: 4000/4000.");
+        System.out.println("\nYou click 'Submit' just as the sun begins to rise at " + formatTime() + ".");
+        System.out.println("\nYou survived the all-nighter!");
+
+        return true; 
+    }
+    //cheat to win
+    private boolean cheat() {
+        player.setWordCount(4000);
+        
+        System.out.println("\n*** CHEAT CODE ACTIVATED: OVERRIDE SUBMIT ***");
+        
+        System.out.println("\n========================================================");
+        System.out.println("||        SYSTEM OVERRIDE: PAPER SUBMITTED!           ||");
+        System.out.println("========================================================");
+        System.out.println("You've successfully HACKED THE SYSTEM!");
+        System.out.println("Word Count Set to 4000/4000.");
+        System.out.println("Grade: 100% (MAXIMUM OVERDRIVE)");
+        System.out.println("The professor won't know what hit them. VICTORY!");
+        System.out.println("========================================================");
+
+        return true; // Game ends
     }
 
     private void resolveDistraction(String inputCommand) {
@@ -352,6 +387,7 @@ public class ZorkULGame {
         System.out.println("You are lost. You are alone. You wander around the university.");
         System.out.print("Your command words are: ");
         parser.showCommands();
+        System.out.println();
     }
 
     private void goRoom(Command command) {
