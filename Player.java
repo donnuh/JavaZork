@@ -1,7 +1,8 @@
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Player { //renamed from Character
+public class Player implements Serializable { //renamed from Character
     private Room currentRoom;
     private final Map<String, Item> inventory;
     private int sleepLevel;

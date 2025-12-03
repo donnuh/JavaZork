@@ -1,9 +1,10 @@
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 
-public class Room {
+public class Room implements Serializable {
     private final String description;
     private final Map<String, Room> exits; //map direction to neighboring Room
     private final Map<String, Item> items;

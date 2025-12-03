@@ -1,8 +1,9 @@
 //edited to become the abstract base class that defines all objects in the world
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public abstract class Item { 
+public abstract class Item implements Serializable { 
     protected String name; 
     protected String description; 
     
