@@ -13,14 +13,11 @@ import java.util.HashMap;
 
 public final class ZorkULGame implements Serializable {
     public static final long serialVersionUID = 1L;
-    
-    // Fields marked as 'transient' are ignored during serialization.
     public transient Parser parser;
     
     public Player player;
     public final Map<String, Room> roomMap; 
 
-    // Game state flags/variables (will be serialized)
     public boolean isCoffeeMachineFixed = false; 
     public boolean isSnackTaken = false;
     public int gameTimeHours = 22;
@@ -33,32 +30,19 @@ public final class ZorkULGame implements Serializable {
     public int hyperfocusRemainingTurns = 0; 
     public String requiredCommand = null;
 
-    /**
-     * Constructor for a NEW game. 
-     */
     public ZorkULGame() {
-        // Initialize fields that are transient or needed for setup
         this.roomMap = new HashMap<>();
         this.parser = new Parser();
         createRooms();
     }
-    
-    // --- Custom Deserialization Logic ---
     private void readObject(java.io.ObjectInputStream in) 
         throws java.io.IOException, ClassNotFoundException {
 
-    in.defaultReadObject(); // Restore saved fields
+    in.defaultReadObject(); 
 
-    // Recreate transient parser after load
     this.parser = new Parser();
 }
 
-    
-    // --- Room Creation ---
-
-    /**
-     * Creates all rooms and items for a NEW game.
-     */
     public void createRooms() {
         Room dorm, corridor, lounge, library, maintenance, gamerRoom, researchStacks;
        
@@ -70,7 +54,6 @@ public final class ZorkULGame implements Serializable {
         gamerRoom = new Room("in Max's Gamer Room. The walls glow with RGB light and the sound of mechanical keyboards fills the air.");
         researchStacks = new Room("in the deep, dusty Research Stacks of the library. It is quiet here, perfect for focus.");
 
-        // Map rooms by description
         roomMap.put(dorm.getDescription(), dorm);
         roomMap.put(corridor.getDescription(), corridor);
         roomMap.put(lounge.getDescription(), lounge);
@@ -79,7 +62,6 @@ public final class ZorkULGame implements Serializable {
         roomMap.put(gamerRoom.getDescription(), gamerRoom);
         roomMap.put(researchStacks.getDescription(), researchStacks);
         
-        // Items for a new game (using nested classes defined elsewhere)
         ColdCoffee coffeeMug = new ColdCoffee("CoffeeMug", "A mug with stale coffee residue.");
         SimpleItem replacementFilter = new SimpleItem("Filter", "A brand new, clean coffee filter. Seems to be the right size for the machine.");
         SimpleItem studentID = new SimpleItem("StudentID", "Your university ID card. You need this to get into locked campus buildings.");
@@ -88,8 +70,7 @@ public final class ZorkULGame implements Serializable {
         dorm.addItem(new Laptop("Laptop", "Your trusty (and slightly battered) research machine."));
         dorm.addItem(coffeeMug);
         dorm.addItem(studentID); 
-   
-        // Set fixed exits
+
         dorm.setExit("east", corridor);
         corridor.setExit("west", dorm);
         corridor.setExit("up", lounge); 
@@ -114,11 +95,10 @@ public final class ZorkULGame implements Serializable {
         while (!finished) {
             Command command = parser.getCommand();
             
-            // Check for save/load commands first
             if (command.getCommandWord() != null) {
                 if (command.getCommandWord().equals("save")) {
                     GamePersistence.saveGame(this);
-                    continue; // Do not advance time for saving
+                    continue; 
                 }
             }
             finished = processCommand(command);
@@ -136,10 +116,8 @@ public final class ZorkULGame implements Serializable {
         System.out.println(String.format("Current Time: %s | Sleep Level: %d | Word Count: %d/4000", formatTime(), player.getSleepLevel(), player.getWordCount()));
     }
     public boolean processCommandString(String commandLine) {
-        // 1. Use the existing parser to turn the raw String into a Command object
         Command command = parser.getCommand(commandLine);
         
-        // 2. Pass the resulting Command object to the internal logic
         return processCommand(command);
     }
 
@@ -200,16 +178,12 @@ public final class ZorkULGame implements Serializable {
             return false;
         }
 
-        // --- Distraction Resolution Check ---
-        // We check this BEFORE advancing time or executing game logic
         if (isDistracted) {
             if (commandWord.equalsIgnoreCase("close") || commandWord.equalsIgnoreCase("mute")) {
-                // If the player successfully attempts to resolve the distraction, 
-                // we handle the resolution here and prevent the time penalty/time advance.
+           
                 resolveDistraction(commandWord);
-                commandHandled = true; // Command was a distraction resolution attempt
+                commandHandled = true; 
             } else {
-                // The player executed a different command while distracted. Apply penalty.
                 System.out.println("\n[DISTRACTION FAILURE] You ignored the alert and wasted 15 minutes!");
                 advanceTime(15); 
                 isDistracted = false;
@@ -217,9 +191,8 @@ public final class ZorkULGame implements Serializable {
             }
         }
         
-        // --- Advance Time (Only if not a status command or a distraction resolution) ---
         if (!commandHandled && !commandWord.equals("status") && !commandWord.equals("help") && !commandWord.equals("look") && !commandWord.equals("save")) {
-            advanceTime(10); // 10 minutes per action
+            advanceTime(10); 
         }
 
 
@@ -239,7 +212,7 @@ public final class ZorkULGame implements Serializable {
             case "cheat" -> { return cheat(); } 
             case "save" -> { /* Handled in play() loop */ }
             case "close", "mute" -> { 
-                // If it wasn't handled by the distraction check above, it's just a normal command
+                
                 if (!commandHandled) { 
                     System.out.println("Nothing needs closing or muting right now.");
                 }
@@ -375,7 +348,6 @@ public final class ZorkULGame implements Serializable {
             return;
         } 
         
-        // Note: Runtime check for Consumable is necessary here
         if (item instanceof Consumable consumable) {
             consumable.consume(player); 
         } else {
@@ -455,20 +427,16 @@ public final class ZorkULGame implements Serializable {
         String inputItemName = command.getSecondWord();
         Item itemToTake = null;
         String officialItemName = null;
-
-        // --- FIX: Case-Insensitive Search (Requires getItems() in Room.java) ---
-        // We iterate through all items in the room to find a case-insensitive match.
         Map<String, Item> roomItems = player.getCurrentRoom().getItems();
         
         for (Map.Entry<String, Item> entry : roomItems.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(inputItemName)) {
-                officialItemName = entry.getKey(); // Get the correct, cased name for lookup
+                officialItemName = entry.getKey(); 
                 itemToTake = entry.getValue();
                 break;
             }
         }
 
-       // 2. Handle dynamic snack taking (using the case-insensitive official name)
         if (officialItemName != null && officialItemName.equalsIgnoreCase("Snack") && player.getCurrentRoom().getDescription().contains("Study Lounge")) {
             if (!isCoffeeMachineFixed) {
                 System.out.println("Nothing to take here.");
@@ -487,10 +455,9 @@ public final class ZorkULGame implements Serializable {
                 return;
             }
         }
-        
-        // 3. Normal item taking logic
+    
         if (itemToTake != null) { 
-            // We use the officially cased name (officialItemName) to remove it from the room
+            
             Item item = player.getCurrentRoom().takeItem(officialItemName); 
             if (item != null) {
                  player.addItem(item); 
@@ -533,15 +500,8 @@ public final class ZorkULGame implements Serializable {
     }
 }
 
-/**
- * Run a textual command through the game's parser and logic while capturing
- * all System.out output produced during the call. Returns printed output
- * and the boolean result (true == game finished).
- *
- * Use this from a GUI so printed lines are visible in the UI.
- */
 public CommandResult processCommandAndCapture(String commandLine) {
-    // Temporarily capture System.out
+    
     PrintStream originalOut = System.out;
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     PrintStream capturing = new PrintStream(baos);
@@ -551,11 +511,11 @@ public CommandResult processCommandAndCapture(String commandLine) {
     try {
         finished = processCommandString(commandLine);
     } catch (Exception e) {
-        // make sure exceptions are visible in GUI
+        
         e.printStackTrace(capturing);
-        finished = true; // treat exception as fatal to avoid further calls
+        finished = true; 
     } finally {
-        // restore standard out
+        
         System.setOut(originalOut);
         try { capturing.flush(); } catch (Exception ignored) {}
     }
@@ -566,10 +526,9 @@ public CommandResult processCommandAndCapture(String commandLine) {
 
 
     public static void main(String[] args) {
-        // Attempt to load the game first
         ZorkULGame game = GamePersistence.loadGame();
         
-        // If loading failed, start a new game
+        
         if (game == null) {
             System.out.println("\n--- Starting New Game ---");
             game = new ZorkULGame();
@@ -578,16 +537,12 @@ public CommandResult processCommandAndCapture(String commandLine) {
         game.play();
     }  
     
-    // --- Placeholder Classes for Compilation ---
-    // These must be defined for ZorkULGame to compile, 
-    // but the full definitions are provided in ItemSubclasses.java
-    
     static class SimpleItem extends Item implements Serializable {
         public static final long serialVersionUID = 1L;
         public SimpleItem(String name, String description) { super(name, description); }
         @Override public void interact(Player player) { System.out.println("You examine the " + getName() + "."); }
         
-        /** Serialization Factory Method */
+        //Serialization Factory Method 
         public static SimpleItem fromSaveableMap(Map<String, Object> map) {
             String name = (String) map.get("name");
             String description = (String) map.get("description");
@@ -600,7 +555,6 @@ public CommandResult processCommandAndCapture(String commandLine) {
         public Laptop(String name, String description) { super(name, description); }
         @Override public void interact(Player player) { System.out.println("The " + getName() + " is currently open to your unfinished paper."); }
 
-        /** Serialization Factory Method */
         public static Laptop fromSaveableMap(Map<String, Object> map) {
             String name = (String) map.get("name");
             String description = (String) map.get("description");
@@ -620,7 +574,6 @@ public CommandResult processCommandAndCapture(String commandLine) {
         public static Snack fromSaveableMap(Map<String, Object> map) {
             String name = (String) map.get("name");
             String description = (String) map.get("description");
-            // Since sleepEffect is hardcoded to 10 in the class, we pass that value to the constructor
             return new Snack(name, description, 10);
         }
     }
@@ -632,11 +585,9 @@ public CommandResult processCommandAndCapture(String commandLine) {
         @Override public void consume(Player player) { player.setSleepLevel(player.getSleepLevel() + getSleepBoostAmount()); System.out.println("You gulp down the stale coffee residue. (+" + getSleepBoostAmount() + " Sleep)"); player.removeItem(this); }
         @Override public void interact(Player player) { System.out.println("This " + getName() + " is old and cold. Use it to drink it."); }
 
-        /** Serialization Factory Method */
         public static ColdCoffee fromSaveableMap(Map<String, Object> map) {
             String name = (String) map.get("name");
             String description = (String) map.get("description");
-            // The ColdCoffee constructor only takes two arguments
             return new ColdCoffee(name, description);
         }
     }

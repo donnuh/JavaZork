@@ -40,24 +40,18 @@ public class ZorkULGui extends Application {
         messageLabel = createMessageLabel();
 
         initializeGameAndPrintStatus();
-
-        // 1. Root Container
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #222222;"); // Dark background for the app frame
+        root.setStyle("-fx-background-color: #222222;"); 
 
-        // 2. Game Viewport (Image + Terminal Overlay)
         StackPane gameViewport = createGameViewport();
         
-        // 3. Controls (Buttons and Input)
         VBox controlsBox = createControlsBox();
 
         root.setCenter(gameViewport);
         root.setBottom(controlsBox);
 
-        // Standard scene size 
         Scene scene = new Scene(root, 1000, 700); 
         
-        // Bind image to scene size
         backgroundImageView.fitWidthProperty().bind(scene.widthProperty());
         backgroundImageView.fitHeightProperty().bind(gameViewport.heightProperty()); // Bind to its parent StackPane height
 
@@ -71,8 +65,6 @@ public class ZorkULGui extends Application {
     }
 
     private void initializeRoomImages() {
-        // NOTE: These keys MUST perfectly match the lowercase, trimmed output of game.getCurrentRoomName().
-        // I have cleaned up the keys slightly to remove trailing whitespace/newline issues.
         roomImageMap.put("in the dormitory corridor. you can hear muffled video gamenoises from other rooms.", "images/default.jpeg");
         roomImageMap.put("in your dorm room. your desk is covered in papers and a glowing laptop.", "images/dorm.jpeg");
         roomImageMap.put("in max's gamer room. the walls glow with rgb light and the sound of mechanical keyboards fills the air.", "images/gamerRoom.jpeg");
@@ -88,18 +80,14 @@ public class ZorkULGui extends Application {
         area.setEditable(false);
         area.setWrapText(true);
         
-        // User-requested size (450x450)
         area.setPrefSize(650, 450); 
         area.setMaxSize(650, 450); 
         
         area.setStyle(
-            // Use 'transparent' for the inner control background
             "-fx-control-inner-background: transparent;" + 
-            // Set the text color to the user's request
             "-fx-text-fill:rgb(80, 79, 79);" + 
             "-fx-font-family: 'Consolas', 'Monospaced';" +
             "-fx-font-size: 14pt;" +
-            // Ensure the border of the TextArea control itself is also transparent
             "-fx-background-color: transparent;" +
             "-fx-background-radius: 5px;"
         );
@@ -131,10 +119,10 @@ public class ZorkULGui extends Application {
     private StackPane createGameViewport() {
         backgroundImageView = new ImageView();
         backgroundImageView.setFitWidth(1000);
-        backgroundImageView.setPreserveRatio(false); // Let the image stretch to fill the area
+        backgroundImageView.setPreserveRatio(false); 
         backgroundImageView.setSmooth(true);
 
-        // Container for the output area, centered over the image
+       
         StackPane terminalOverlay = new StackPane(outputArea);
         terminalOverlay.setPadding(new Insets(20));
         
@@ -147,14 +135,12 @@ public class ZorkULGui extends Application {
     private VBox createControlsBox() {
         HBox directions = createDirectionalButtons();
 
-        // Style the action buttons
         Button saveButton = new Button("Save");
         saveButton.setOnAction(e -> saveGameAction());
 
         Button quitButton = new Button("Quit");
         quitButton.setOnAction(e -> quitGameAction());
-        
-        // Standard button style
+   
         String buttonStyle = "-fx-background-color: #555555; -fx-text-fill: white; -fx-padding: 8 16; -fx-font-weight: bold; -fx-background-radius: 5px;";
         saveButton.setStyle(buttonStyle);
         quitButton.setStyle(buttonStyle);
@@ -200,7 +186,6 @@ public class ZorkULGui extends Application {
             appendTextAndScroll("Game loaded successfully.\n");
         }
         
-        // Use captureGameOutput to redirect printWelcome
         captureGameOutput(() -> game.printWelcome()); 
     }
 
@@ -210,17 +195,14 @@ public class ZorkULGui extends Application {
 
         appendTextAndScroll(command + "\n");
 
-        // The game logic will print output directly to System.out, which is captured.
         captureGameOutput(() -> {
             boolean finished = game.processCommandString(command);
             if (finished) {
-                // Handle game finish state
                 appendTextAndScroll("\n--- Game Over ---");
                 inputField.setEditable(false);
             }
         });
 
-        // Ensure updateBackgroundImage is called AFTER the command processing which updates the room state
         updateBackgroundImage();
 
         appendTextAndScroll(PROMPT);
@@ -229,9 +211,8 @@ public class ZorkULGui extends Application {
     }
 
     private void sendDirection(String cmd) {
-        // This is a direct command execution, not just setting the field text
-        inputField.setText(cmd); // Set the text so the user sees it in the input history if needed
-        processCommand(); // Execute the command
+        inputField.setText(cmd); 
+        processCommand(); 
     }
 
     private void captureGameOutput(Runnable action) {
@@ -242,14 +223,14 @@ public class ZorkULGui extends Application {
         try {
             action.run();
         } catch (Exception e) {
-            // CRITICAL: If game logic fails, capture the error and restore original System.out
+            
             System.setOut(original);
             System.err.println("\n[FATAL GAME ERROR] An unhandled exception occurred during command processing:");
             e.printStackTrace(System.err);
             appendTextAndScroll("[FATAL GAME ERROR] Check console for details.");
             return;
         } finally {
-            // IMPORTANT: Always restore the original System.out after capturing output
+            
             System.setOut(original); 
         }
 
@@ -257,25 +238,19 @@ public class ZorkULGui extends Application {
     }
 
     private void updateBackgroundImage() {
-        // Get the room description from the game
+        
         String roomDescriptionRaw = game.getCurrentRoomName();
-        
-        // Convert the raw description to lowercase and trim it before lookup
-        String key = roomDescriptionRaw.toLowerCase().trim();
-        
-        // --- CRITICAL DEBUGGING STEP: Check your console for this output! ---
+        String roomDescriptionClean = roomDescriptionRaw.replaceAll("[^a-zA-Z0-9 ]", "").trim();
+        String key = roomDescriptionClean.toLowerCase();
+
         System.out.println("--- Image Debug ---");
         System.out.println("Raw Room Description: '" + roomDescriptionRaw + "'");
         System.out.println("Lookup Key:           '" + key + "'");
-        // -------------------------------------------------------------------
-
-        // Find the image path using the normalized key
         String imagePath = roomImageMap.getOrDefault(key, roomImageMap.get("fallback"));
         
         System.out.println("Resolved Image Path:  '" + imagePath + "'");
 
         try {
-            // Use getResourceAsStream for resource loading, which is required for packaged applications
             Image roomImage = new Image(getClass().getResourceAsStream("/" + imagePath));
             
             if (roomImage.isError()) {
@@ -286,7 +261,6 @@ public class ZorkULGui extends Application {
             
         } catch (Exception e) {
             System.err.println("[IMAGE ERROR] Could not load image: " + imagePath + ". Error: " + e.getMessage());
-            // Fallback to a plain dark background if image fails
             backgroundImageView.setImage(null);
             backgroundImageView.setStyle("-fx-background-color: #333333;"); 
         }

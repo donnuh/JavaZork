@@ -54,12 +54,11 @@ public class Parser {
                 }
             }
         }
-        
-        // Check if the command word is known and create the Command object.
+
         if (commands.isCommand(word1)) {
             return new Command(word1, word2);
         } else {
-            return new Command(null, word2); // Unknown command
+            return new Command(null, word2); 
         }
     }
 

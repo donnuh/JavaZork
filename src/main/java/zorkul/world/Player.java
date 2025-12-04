@@ -23,9 +23,9 @@ public class Player implements Serializable { //renamed from Character
         this.wordCount = 0;
     }
      public void write() {
-        int words = 100; // default words per action
+        int words = 100; 
         this.wordCount += words;
-        this.sleepLevel -= 5; // writing is tiring
+        this.sleepLevel -= 5; 
         System.out.println("You wrote " + words + " words. Total: " + wordCount + "/4000. (-5 sleep)");
     }
 
@@ -52,7 +52,7 @@ public class Player implements Serializable { //renamed from Character
         return sb.toString();
     }
 
-    // --- Accessors/Mutators ---
+    //Accessors/Mutators
     
     public int getWordCount() {
         return wordCount;

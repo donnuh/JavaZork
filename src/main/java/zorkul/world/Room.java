@@ -18,10 +18,9 @@ public class Room implements Serializable {
         this.exits = new HashMap<>();
         this.items = new HashMap<>();
     }
-    
-    // NOTE: Manual I/O methods (fromSaveableMap, toSaveableMap) have been removed.
+   
 
-    // --- Accessors and Mutators ---
+    //Accessors and Mutators
 
     public void setExit(String direction, Room neighbor) {
         exits.put(direction, neighbor);
@@ -70,6 +69,6 @@ public class Room implements Serializable {
         return returnString.toString();
     }
     public Map<String, Item> getItems() {
-    return items; // Assumes 'items' is the name of your item map field
+    return items; // ssumes 'items' is the name of your item map field
 }
 }
