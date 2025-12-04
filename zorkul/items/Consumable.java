@@ -1,4 +1,7 @@
+package zorkul.items;
 //made interface to define the resource mechanics
+
+import zorkul.world.Player;
 
 public interface Consumable {
     //amount of sleep level restored

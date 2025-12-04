@@ -1,3 +1,4 @@
+package zorkul.core;
 import java.util.Scanner;
 
 public class Parser {
@@ -11,7 +12,7 @@ public class Parser {
 
     public Command getCommand() {
         System.out.print("> ");
-        String inputLine = reader.nextLine();
+        String inputLine = reader.nextLine().toLowerCase();
 
         String word1 = null;
         String word2 = null;

@@ -1,3 +1,4 @@
+package zorkul.core;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,8 +25,9 @@ public class CommandWords {
         validCommands.put("mute", "Mute a distraction");
         validCommands.put("submit", "Submit your paper");
         validCommands.put("cheat", "Cheat on your paper"); 
+        validCommands.put("save", "Save your game");
+        validCommands.put("load", "Load a saved game");
         
-
     }
 
     public boolean isCommand(String commandWord) {

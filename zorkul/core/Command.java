@@ -1,3 +1,4 @@
+package zorkul.core;
 public class Command {
     private final String commandWord;
     private final String secondWord;

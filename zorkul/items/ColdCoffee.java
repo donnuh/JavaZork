@@ -1,4 +1,8 @@
+package zorkul.items;
 // ColdCoffee.java
+
+import zorkul.world.Player;
+
 public class ColdCoffee extends Item implements Consumable {
 
     private final int CAFFEINE_VALUE = 20;
