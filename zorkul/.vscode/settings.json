@@ -1,12 +1,24 @@
 {
+    // This file configures settings specific to the ZorkULGame project.
 
     "files.exclude": {
+        // Hides all compiled Java binary files, regardless of location
         "**/*.class": true, 
         
+        // --- Added a more specific exclusion rule ---
+        // Excludes the 'bin' folder (common default output for compiled classes)
+        "**/bin": true, 
+        
+        // OPTIONAL: Hides any temporary build or configuration files
         "**/.classpath": true,
         "**/.project": true,
         "**/.settings": true,
         
+        // Hides the .vscode folder itself in the file explorer (optional)
         "**/.vscode": false 
     },
+    
+    // You might also want to hide the source files from other packages temporarily
+    // This is useful if you are using an external build system
+    // "java.project.explorer.hideNonRuntimeDependencies": true
 }
