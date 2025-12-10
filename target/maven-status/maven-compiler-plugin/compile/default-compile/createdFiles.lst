@@ -1,5 +1,6 @@
 zorkul/core/Parser.class
 zorkul/core/ZorkULGame$Laptop.class
+zorkul/core/CommandWord.class
 zorkul/world/Player.class
 zorkul/core/GamePersistence.class
 zorkul/items/Consumable.class

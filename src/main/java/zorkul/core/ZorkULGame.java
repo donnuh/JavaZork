@@ -2,14 +2,13 @@ package zorkul.core;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 import zorkul.items.Consumable;
 import zorkul.items.Item;
 import zorkul.world.Player;
 import zorkul.world.Room;
-
-import java.util.HashMap;
 
 public final class ZorkULGame implements Serializable {
     public static final long serialVersionUID = 1L;
@@ -258,7 +257,7 @@ public final class ZorkULGame implements Serializable {
     }
 
     public void resolveDistraction(String inputCommand) {
-        // This is only called if isDistracted is true and inputCommand is 'close' or 'mute'
+        //only called if isDistracted is true and inputCommand isclose' or 'mute'
         if (requiredCommand != null && inputCommand.equalsIgnoreCase(requiredCommand)) {
             System.out.println("\n[DISTRACTION RESOLVED] That was fast! You enter **Hyperfocus**!");
             isDistracted = false;
@@ -419,6 +418,7 @@ public final class ZorkULGame implements Serializable {
     }
 
     public void takeItem(Command command) {
+        
         if (!command.hasSecondWord()) { 
             System.out.println("Take what?"); 
             return; 
@@ -472,11 +472,18 @@ public final class ZorkULGame implements Serializable {
     }
 
     public void dropItem(Command command) {
-        if (!command.hasSecondWord()) { System.out.println("Drop what?"); return; }
+        if (!command.hasSecondWord()) { 
+            System.out.println("Drop what?"); 
+            return; 
+        }
         String itemName = command.getSecondWord();
-        Item item = player.getItem(itemName);
-        if (item == null) { System.out.println("You don't have that item."); } 
-        else { player.removeItem(item); player.getCurrentRoom().addItem(item); System.out.println("You dropped the " + itemName + "."); }
+        Item droppedItem = player.dropItem(itemName);
+
+        if (droppedItem != null) { 
+            System.out.println("You dropped the " + droppedItem.getName() + " in the " + player.getCurrentRoom().getDescription()); 
+        } else { 
+            System.out.println("You don't have that item in your inventory."); 
+        }
     }
     public int getWordCount() {
     return player.getWordCount();

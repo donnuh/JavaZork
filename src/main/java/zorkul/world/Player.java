@@ -15,7 +15,6 @@ public class Player implements Serializable { //renamed from Character
     private int sleepLevel;
     private int wordCount; 
 
-
     public Player(String name, Room startRoom) {
         this.currentRoom = startRoom;
         this.inventory = new HashMap<>();
@@ -36,9 +35,23 @@ public class Player implements Serializable { //renamed from Character
     public void removeItem(Item item) {
         inventory.remove(item.getName());
     }
-
     public Item getItem(String name) {
-        return inventory.get(name);
+        for (String officialItemName : inventory.keySet()) {
+            if (officialItemName.equalsIgnoreCase(name)) {
+                return inventory.get(officialItemName);
+            }
+        }
+        return null;
+    }
+    public Item dropItem(String itemName) {
+        Item itemToDrop = getItem(itemName);
+
+        if (itemToDrop != null) {
+            removeItem(itemToDrop);
+            currentRoom.addItem(itemToDrop);
+        }
+
+        return itemToDrop;
     }
 
     public String showInventoryAndReturnMessage() {
